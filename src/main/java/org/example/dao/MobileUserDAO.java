@@ -1,6 +1,6 @@
 package org.example.dao;
 
-import org.example.dto.MobileUser;
+import org.example.Model.MobileUser;
 
 import java.util.List;
 

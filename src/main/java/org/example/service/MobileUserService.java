@@ -2,7 +2,7 @@ package org.example.service;
 
 import jakarta.annotation.Resource;
 import org.example.dao.MobileUserDAO;
-import org.example.dto.MobileUser;
+import org.example.Model.MobileUser;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

@@ -2,15 +2,12 @@ package org.example.controller;
 
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
-import org.example.dto.MobileUser;
-import org.example.dto.Result;
+import org.example.Model.MobileUser;
 import org.example.service.MobileUserService;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
 
 @CrossOrigin
 @RestController

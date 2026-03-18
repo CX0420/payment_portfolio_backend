@@ -28,3 +28,6 @@ java -Dapp.env=dev -cp target/classes:target/dependency/* org.example.Main
 
 See `.env.example` for the full list of supported variables.
 
+DB using supabase
+redis using upstash
+flutter hosting in firebase

@@ -1,4 +1,4 @@
-package org.example.dto;
+package org.example.Model;
 
 import lombok.Data;
 
@@ -7,5 +7,7 @@ import java.time.LocalDateTime;
 public class BasicTable {
     private long id;
     private LocalDateTime createdDatetime;
-    private LocalDateTime modifiedDatetime;
+    private String createdBy;
+    private LocalDateTime modifiedDateTime;
+    private String modifiedBy;
 }

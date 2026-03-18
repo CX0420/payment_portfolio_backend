@@ -1,6 +1,6 @@
 package org.example.dao;
 
-import org.example.dto.MobileUser;
+import org.example.Model.MobileUser;
 import org.example.supabase.SupabaseClient;
 import org.springframework.stereotype.Repository;
 
@@ -51,7 +51,7 @@ public class MobileUserDAOImpl implements MobileUserDAO{
                 u.setActivatedDate(toLocalDateTime(rs.getTimestamp("activated_date")));
                 u.setWrongPasswordCount(rs.getInt("wrong_password_count"));
                 u.setCreatedDatetime(toLocalDateTime(rs.getTimestamp("created_datetime")));
-                u.setModifiedDatetime(toLocalDateTime(rs.getTimestamp("modified_datetime")));
+                u.setModifiedDateTime(toLocalDateTime(rs.getTimestamp("modified_datetime")));
 
                 out.add(u);
             }

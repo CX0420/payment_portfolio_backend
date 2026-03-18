@@ -1,4 +1,4 @@
-package org.example.dto;
+package org.example.Model;
 
 
 import lombok.Data;
@@ -13,5 +13,7 @@ public class MobileUser extends BasicTable{
     private String email;
     private LocalDateTime activatedDate;
     private int wrongPasswordCount;
+    private String status;
+    private MobileUserSetting mobileUserSetting;
 }
 

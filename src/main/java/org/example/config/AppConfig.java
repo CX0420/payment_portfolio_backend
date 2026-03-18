@@ -119,4 +119,8 @@ public class AppConfig {
         System.out.println("📡 Supabase URL: " + getSupabaseUrl());
         System.out.println("🗄️  Database URL: " + getDbUrl());
     }
+
+    public static String getRedisUrl() {
+        return properties.getProperty("redis.url");
+    }
 }

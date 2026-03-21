@@ -12,12 +12,17 @@ import java.net.URISyntaxException;
 public class RedisConfig {
     private static final String REDIS_URL = AppConfig.getRedisUrl(); // Get from properties
     private static JedisPool jedisPool;
+    private static boolean redisFailed = false;
 
     static {
         initializePool();
     }
 
     private static void initializePool() {
+        if (redisFailed) {
+            return; // Already failed, don't retry
+        }
+
         try {
             // Parse Upstash Redis URL
             // Format: rediss://default:YOUR_TOKEN@us1-xxxx.upstash.io:6379
@@ -57,9 +62,11 @@ public class RedisConfig {
             System.out.println("✅ Connected to Upstash Redis at: " + host);
             testConnection();
 
-        } catch (URISyntaxException e) {
-            System.err.println("❌ Invalid Redis URL: " + e.getMessage());
-            throw new RuntimeException("Failed to initialize Redis connection", e);
+        } catch (Exception e) {
+            redisFailed = true;
+            jedisPool = null;
+            System.err.println("❌ Failed to initialize Redis connection: " + e.getMessage());
+            System.err.println("⚠️ Redis will be unavailable. Please check your Redis URL and credentials.");
         }
     }
 
@@ -73,8 +80,14 @@ public class RedisConfig {
     }
 
     public static Jedis getJedis() {
-        if (jedisPool == null || jedisPool.isClosed()) {
+        if (jedisPool == null) {
+            throw new RuntimeException("Redis connection is not available. Please check your Redis configuration.");
+        }
+        if (jedisPool.isClosed()) {
             initializePool();
+            if (jedisPool == null) {
+                throw new RuntimeException("Redis connection is not available. Please check your Redis configuration.");
+            }
         }
         return jedisPool.getResource();
     }
@@ -88,6 +101,9 @@ public class RedisConfig {
 
     // Utility method to check connection health
     public static boolean isHealthy() {
+        if (jedisPool == null) {
+            return false;
+        }
         try (Jedis jedis = getJedis()) {
             return "PONG".equals(jedis.ping());
         } catch (Exception e) {

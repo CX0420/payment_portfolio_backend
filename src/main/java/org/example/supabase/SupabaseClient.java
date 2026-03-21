@@ -1,128 +1,99 @@
 package org.example.supabase;
 
 import org.example.config.AppConfig;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import javax.sql.DataSource;
 import java.sql.*;
+import java.util.concurrent.TimeUnit;
 
+@Component  // 添加 @Component 让 Spring 管理
 public class SupabaseClient {
+
+    private final DataSource dataSource;  // 使用 Spring 的 DataSource
     private final String dbUrl;
-    private final String dbUser;
-    private final String dbPassword;
 
-    public SupabaseClient() {
-        // Get the full database URL from config
-        this.dbUrl = ensureSslMode(AppConfig.getDbUrl());
+    @Autowired  // Spring 会自动注入 DataSource
+    public SupabaseClient(DataSource dataSource) {
+        this.dataSource = dataSource;
+        this.dbUrl = AppConfig.getDbUrl();
 
-        // Parse username and password from the URL
-        String[] credentials = parseCredentialsFromUrl(dbUrl);
-        this.dbUser = credentials[0];
-        this.dbPassword = credentials[1];
-
-        System.out.println("🚀 Initialized Supabase DB client for: " + AppConfig.getEnvName());
+        System.out.println("🚀 Initialized Supabase DB client with Spring DataSource for: " + AppConfig.getEnvName());
         System.out.println("📡 Using DB URL: " + redactJdbcUrl(dbUrl));
-        System.out.println("👤 Connecting as user: " + dbUser);
+        testConnection();
     }
 
     /**
-     * Parse username and password from JDBC URL
-     * Format: jdbc:postgresql://host:port/database?user=username&password=password
+     * 测试连接是否正常
      */
-    private String[] parseCredentialsFromUrl(String url) {
-        String[] result = new String[2]; // [0] = user, [1] = password
-        result[0] = "";
-        result[1] = "";
-
-        try {
-            // Find the query part after '?'
-            int queryStart = url.indexOf('?');
-            if (queryStart > 0) {
-                String query = url.substring(queryStart + 1);
-                String[] params = query.split("&");
-
-                for (String param : params) {
-                    String[] keyValue = param.split("=");
-                    if (keyValue.length == 2) {
-                        if ("user".equals(keyValue[0])) {
-                            result[0] = keyValue[1];
-                        } else if ("password".equals(keyValue[0])) {
-                            result[1] = keyValue[1];
-                        }
-                    }
-                }
-            }
-
-            // If not found in URL, try to get from separate config
-            if (result[0].isEmpty()) {
-                result[0] = AppConfig.getDbUser(); // Fallback to separate property
-            }
-            if (result[1].isEmpty()) {
-                result[1] = AppConfig.getDbPassword(); // Fallback to separate property
-            }
-
-        } catch (Exception e) {
-            System.err.println("⚠️ Error parsing credentials from URL: " + e.getMessage());
-            // Fallback to separate properties
-            result[0] = AppConfig.getDbUser();
-            result[1] = AppConfig.getDbPassword();
+    private void testConnection() {
+        try (Connection conn = getConnection()) {
+            System.out.println("✅ Successfully connected to database");
+        } catch (SQLException e) {
+            System.err.println("❌ Failed to connect to database: " + e.getMessage());
         }
+    }
 
-        return result;
+    /**
+     * 从 Spring 的 DataSource 获取连接
+     * 现在使用的是 application-dev.properties 中配置的 HikariCP 连接池
+     */
+    public Connection getConnection() throws SQLException {
+        try {
+            Connection conn = dataSource.getConnection();
+            // 可选：验证连接
+            if (!conn.isValid(5)) {
+                conn.close();
+                throw new SQLException("Invalid connection from pool");
+            }
+            return conn;
+        } catch (SQLException e) {
+            System.err.println("❌ Failed to get connection from pool: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * 简单连接测试
+     */
+    public boolean ping() {
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement("SELECT 1");
+             ResultSet rs = ps.executeQuery()) {
+            return rs.next() && rs.getInt(1) == 1;
+        } catch (SQLException e) {
+            System.err.println("❌ Ping failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 获取连接池统计信息（通过 HikariCP 的 MXBean）
+     */
+    public String getPoolStats() {
+        if (dataSource instanceof com.zaxxer.hikari.HikariDataSource) {
+            com.zaxxer.hikari.HikariDataSource hikariDS = (com.zaxxer.hikari.HikariDataSource) dataSource;
+            return String.format(
+                    "Active: %d, Idle: %d, Total: %d, Waiting: %d",
+                    hikariDS.getHikariPoolMXBean().getActiveConnections(),
+                    hikariDS.getHikariPoolMXBean().getIdleConnections(),
+                    hikariDS.getHikariPoolMXBean().getTotalConnections(),
+                    hikariDS.getHikariPoolMXBean().getThreadsAwaitingConnection()
+            );
+        }
+        return "Not using HikariCP";
     }
 
     private String redactJdbcUrl(String url) {
         if (url == null) return null;
-        // Redact any password=... in query string
         return url.replaceAll("(?i)(password=)[^&]+", "$1***");
     }
 
-    /**
-     * Supabase Postgres requires SSL. If sslmode is missing, default to require.
-     */
-    private String ensureSslMode(String url) {
-        if (url == null || url.isBlank()) return url;
-        if (!url.startsWith("jdbc:postgresql://")) return url;
-        if (url.matches("(?i).*([?&])sslmode=.*")) return url;
-
-        String separator = url.contains("?") ? "&" : "?";
-        return url + separator + "sslmode=require";
-    }
-
-    /**
-     * Get connection to Supabase PostgreSQL
-     */
-    public Connection getConnection() throws SQLException {
-        try {
-            // Ensure PostgreSQL driver is loaded
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            throw new SQLException("PostgreSQL JDBC Driver not found. Add dependency: org.postgresql:postgresql", e);
-        }
-
-        // Use the URL directly - it already contains user and password
-        return DriverManager.getConnection(dbUrl, dbUser, dbPassword);
-    }
-
-    /**
-     * Simple connectivity check.
-     * Uses a trivial query so it works on any Postgres DB.
-     */
-    public boolean ping() throws SQLException {
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement("select 1");
-             ResultSet rs = ps.executeQuery()) {
-            return rs.next() && rs.getInt(1) == 1;
-        }
-    }
-
+    // 用于测试
     public static void main(String[] args) {
-        SupabaseClient client = new SupabaseClient();
-        try {
-            System.out.println("✅ DB ping: " + (client.ping() ? "OK" : "FAILED"));
-        } catch (Exception e) {
-            System.err.println("❌ Error: " + e.getMessage());
-            e.printStackTrace();
-        }
+        // 这个 main 方法现在不能直接运行，因为需要 Spring 上下文
+        // 建议创建一个测试类或移除 main 方法
+        System.out.println("Please run this class within Spring Boot context");
     }
-
-
 }

@@ -1,7 +1,7 @@
 package org.example.enumConstant;
 
 public enum TransactionStatus implements Status {
-    SUCCESS(100, "Success", "transaction.status.success"),
+    APPROVED(100, "Approved", "transaction.status.approved"),
     VOID(101, "Voided", "transaction.status.voided"),
     PENDING(102, "Pending", "transaction.status.pending"),
     SETTLED(103, "Settled", "transaction.status.settled");

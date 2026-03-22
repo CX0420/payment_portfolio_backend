@@ -1,9 +1,9 @@
-package org.example.model;
+package org.example.dto;
 
 import java.time.Instant;
 import java.util.UUID;
 
-public class Payment {
+public class PaymentDTO {
     private UUID id;
     private double amount;
     private String status;
@@ -13,9 +13,9 @@ public class Payment {
     private String transactionType;
 
     // Constructors
-    public Payment() {}
+    public PaymentDTO() {}
 
-    public Payment(double amount, String status, String paymentMethod) {
+    public PaymentDTO(double amount, String status, String paymentMethod) {
         this.amount = amount;
         this.status = status;
         this.paymentMethod = paymentMethod;

@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "batch")
 @Data
@@ -22,4 +25,8 @@ public class Batch extends BasicTable {
     @JoinColumn(name = "tid_fk")
     @JsonIgnoreProperties("batches")
     private TID tid;
+
+    @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties("batch")
+    private List<TransactionData> transactions = new ArrayList<>();
 }

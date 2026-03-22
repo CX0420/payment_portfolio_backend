@@ -10,7 +10,7 @@ public interface MobileUserDAO {
 
     boolean existsByMobileUserId(String mobileUserId);
 
-    void create(MobileUser mobileUser);
+    MobileUser create(MobileUser mobileUser);
 
     MobileUser findByMobileUserId(String mobileUserId);
 

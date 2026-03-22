@@ -31,3 +31,4 @@ See `.env.example` for the full list of supported variables.
 DB using supabase
 redis using upstash
 flutter hosting in firebase
+https://www.google.com/url?sa=i&source=web&rct=j&url=https://myaccount.google.com/apppasswords&ved=2ahUKEwjG1enj0rCTAxUuTGwGHWafAIsQy_kOegQIARAB&opi=89978449&cd&psig=AOvVaw39cIo_fBm-CS8S_TCyAZuJ&ust=1774170632473000

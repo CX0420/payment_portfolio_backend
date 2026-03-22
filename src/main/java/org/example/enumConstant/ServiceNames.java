@@ -10,6 +10,7 @@ public enum ServiceNames {
     SIGN_UP,
     FORGOT_PASSWORD,
     SEND_RECEIPT,
-    LOGOUT
+    LOGOUT,
+    RESET_PASSWORD
 
 }

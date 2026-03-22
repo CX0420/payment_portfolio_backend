@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -30,5 +31,18 @@ public class TID extends BasicTable {
 
     @OneToMany(mappedBy = "tid", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnoreProperties("tid")
-    private List<Batch> batches;
+    private List<Batch> batches = new ArrayList<>();
+
+    @Column(name = "stan")
+    private Long stan;
+
+    @Column(name = "trace")
+    private Long trace;
+
+    @Transient
+    private Long midFk;
+
+    @Transient
+    private Long mobileUserFk;
+
 }

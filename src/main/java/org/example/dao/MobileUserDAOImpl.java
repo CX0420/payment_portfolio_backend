@@ -1,13 +1,15 @@
 package org.example.dao;
 
 import org.example.model.MobileUser;
+import org.example.util.DataConverterUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public class MobileUserDAOImpl implements MobileUserDAO {
@@ -15,10 +17,29 @@ public class MobileUserDAOImpl implements MobileUserDAO {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    // Custom RowMapper to handle timestamp conversion
+    private RowMapper<MobileUser> mobileUserRowMapper = new RowMapper<MobileUser>() {
+        @Override
+        public MobileUser mapRow(ResultSet rs, int rowNum) throws SQLException {
+            MobileUser user = new MobileUser();
+            user.setId(rs.getLong("id"));
+            user.setMobileUserId(rs.getString("mobile_user_id"));
+            user.setMobileUserName(rs.getString("mobile_user_name"));
+            user.setPin(rs.getString("pin"));
+            user.setEmail(rs.getString("email"));
+            user.setActivatedDate(DataConverterUtil.getLocalDateTime(rs, "activated_date"));
+            user.setWrongPasswordCount(rs.getInt("wrong_password_count"));
+            user.setStatus(rs.getString("status"));
+            user.setCreatedDateTime(DataConverterUtil.getLocalDateTime(rs, "created_datetime"));
+            user.setModifiedDateTime(DataConverterUtil.getLocalDateTime(rs, "modified_datetime"));
+            return user;
+        }
+    };
+
     @Override
     public List<MobileUser> getMobileUserList() {
         String sql = """
-                select
+                SELECT
                   id,
                   mobile_user_id,
                   mobile_user_name,
@@ -29,11 +50,11 @@ public class MobileUserDAOImpl implements MobileUserDAO {
                   status,
                   created_datetime,
                   modified_datetime
-                from mobile_user
-                order by id desc
+                FROM mobile_user
+                ORDER BY id DESC
                 """;
 
-        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(MobileUser.class));
+        return jdbcTemplate.query(sql, mobileUserRowMapper);
     }
 
     @Override
@@ -44,31 +65,40 @@ public class MobileUserDAOImpl implements MobileUserDAO {
     }
 
     @Override
-    public void create(MobileUser mobileUser) {
+    public MobileUser create(MobileUser user) {
         String sql = """
-                INSERT INTO mobile_user (mobile_user_id, mobile_user_name, pin, email, activated_date, wrong_password_count, status, created_datetime, modified_datetime)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-        jdbcTemplate.update(sql,
-                mobileUser.getMobileUserId(),
-                mobileUser.getMobileUserName(),
-                mobileUser.getPin(),
-                mobileUser.getEmail(),
-                mobileUser.getActivatedDate(),
-                mobileUser.getWrongPasswordCount(),
-                mobileUser.getStatus(),
-                mobileUser.getCreatedDatetime(),
-                mobileUser.getModifiedDateTime());
+        INSERT INTO mobile_user 
+        (mobile_user_id, mobile_user_name, pin, email, wrong_password_count, status, 
+         mobile_user_setting_fk, created_by, created_datetime)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        RETURNING id
+        """;
+
+        Long id = jdbcTemplate.queryForObject(sql, Long.class,
+                user.getMobileUserId(),
+                user.getMobileUserName(),
+                user.getPin(),
+                user.getEmail(),
+                user.getWrongPasswordCount(),
+                user.getStatus(),
+                user.getMobileUserSetting() != null ? user.getMobileUserSetting().getId() : null,
+                user.getCreatedBy()
+        );
+
+        user.setId(id);
+        return user;
     }
 
     @Override
     public MobileUser findByMobileUserId(String mobileUserId) {
         String sql = """
-                SELECT id, mobile_user_id, mobile_user_name, pin, email, activated_date, wrong_password_count, status, created_datetime, modified_datetime
+                SELECT id, mobile_user_id, mobile_user_name, pin, email, 
+                       activated_date, wrong_password_count, status, 
+                       created_datetime, modified_datetime
                 FROM mobile_user WHERE mobile_user_id = ?
                 """;
         try {
-            return jdbcTemplate.queryForObject(sql, new BeanPropertyRowMapper<>(MobileUser.class), mobileUserId);
+            return jdbcTemplate.queryForObject(sql, mobileUserRowMapper, mobileUserId);
         } catch (Exception e) {
             return null;
         }
@@ -77,11 +107,13 @@ public class MobileUserDAOImpl implements MobileUserDAO {
     @Override
     public MobileUser findById(Long id) {
         String sql = """
-                SELECT id, mobile_user_id, mobile_user_name, pin, email, activated_date, wrong_password_count, status, created_datetime, modified_datetime
+                SELECT id, mobile_user_id, mobile_user_name, pin, email, 
+                       activated_date, wrong_password_count, status, 
+                       created_datetime, modified_datetime
                 FROM mobile_user WHERE id = ?
                 """;
         try {
-            return jdbcTemplate.queryForObject(sql, new BeanPropertyRowMapper<>(MobileUser.class), id);
+            return jdbcTemplate.queryForObject(sql, mobileUserRowMapper, id);
         } catch (Exception e) {
             return null;
         }
@@ -97,7 +129,7 @@ public class MobileUserDAOImpl implements MobileUserDAO {
                     activated_date = ?,
                     wrong_password_count = ?,
                     status = ?,
-                    modified_datetime = ?
+                    modified_datetime = NOW()
                 WHERE id = ?
                 """;
         jdbcTemplate.update(sql,
@@ -107,7 +139,6 @@ public class MobileUserDAOImpl implements MobileUserDAO {
                 mobileUser.getActivatedDate(),
                 mobileUser.getWrongPasswordCount(),
                 mobileUser.getStatus(),
-                mobileUser.getModifiedDateTime(),
                 mobileUser.getId());
     }
 

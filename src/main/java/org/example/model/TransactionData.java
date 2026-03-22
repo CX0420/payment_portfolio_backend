@@ -51,4 +51,11 @@ public class TransactionData extends BasicTable {
 
     @Column(name = "tid", length = 50)
     private String tid;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "batch_fk")
+    private Batch batch;
+
+    @Column(name = "host_response_code")
+    private String hostResponseCode;
 }

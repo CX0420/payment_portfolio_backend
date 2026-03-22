@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "mobile_user")
@@ -41,4 +43,8 @@ public class MobileUser extends BasicTable {
     @JoinColumn(name = "mobile_user_setting_fk")
     @JsonIgnoreProperties("mobileUser")
     private MobileUserSetting mobileUserSetting;
+
+    @OneToMany(mappedBy = "mobileUser")
+    @JsonIgnoreProperties("mobileUser")
+    private List<PasswordReset> passwordResets = new ArrayList<>();
 }

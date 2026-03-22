@@ -12,8 +12,8 @@ public abstract class BasicTable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "created_datetime", nullable = false, updatable = false)
-    private LocalDateTime createdDatetime;
+    @Column(name = "created_datetime")
+    private LocalDateTime createdDateTime;
 
     @Column(name = "modified_datetime")
     private LocalDateTime modifiedDateTime;
@@ -26,7 +26,7 @@ public abstract class BasicTable {
 
     @PrePersist
     protected void onCreate() {
-        createdDatetime = LocalDateTime.now();
+        createdDateTime = LocalDateTime.now();
     }
 
     @PreUpdate
